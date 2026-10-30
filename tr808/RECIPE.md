@@ -1,8 +1,8 @@
-# TR-808
+# HR-808
 
 Herdr dressed as a Roland TR-808 drum machine, on the gruvbox palette. Tabs are the 808's colored step keys with step numbers printed under them. Agent status shows on dark-glass LEDs throughout. Spaces and agents read like the panel's printed labels, and a gray strip runs along the bottom like the 808's step panel. Underneath it's Herdr's own layout, so nothing in the usual workflow moves. It's a fan homage to the TR-808 and isn't affiliated with Roland.
 
-![TR-808](preview.png)
+![HR-808](preview.png)
 
 ## What you see
 
