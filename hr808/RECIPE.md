@@ -1,6 +1,6 @@
 # HR-808
 
-Herdr dressed as a Roland TR-808 drum machine, on the gruvbox palette. Tabs are the 808's colored step keys with step numbers printed under them. Agent status shows on dark-glass LEDs throughout. Spaces and agents read like the panel's printed labels, and a gray strip runs along the bottom like the 808's step panel. Underneath it's Herdr's own layout, so nothing in the usual workflow moves. It's a fan homage to the TR-808 and isn't affiliated with Roland.
+Herdr dressed as a Roland TR-808 drum machine, on the gruvbox palette. Tabs are the 808's colored step keys with step numbers printed under them. Agent status shows on dark-glass LEDs throughout. Spaces and agents read like the panel's printed labels, and a gray strip runs along the bottom like the 808's step panel. Underneath it's Herdr's own layout, so nothing in the usual workflow moves. Clicking the "Agent Composer" print turns the tab bar into a working 16-step drum machine, an easter egg. It's a fan homage to the TR-808 and isn't affiliated with Roland.
 
 ![HR-808](preview.png)
 
@@ -53,6 +53,14 @@ UI font Helvetica Neue; the print is Futura. Lettering on colored keys and the g
   - LED meters: "N working", "N need you" ("1 needs you"), "N done", "N idle"
   - at the right, a boxed "⌘ SHIFT P COMMANDS"
 
+**Pattern mode** (the easter egg, opened by clicking the print): the tab bar becomes a step sequencer.
+- **Left:** six instrument keys, BD SD CP CH OH CB (bass drum, snare, clap, closed and open hi-hat, cow bell). The selected one is solid cream, the others outlined.
+- **The 16 step keys** in the tab keys' red, orange, yellow and cream fours, numbered 1–16 underneath. A step that plays for the selected instrument has a round red LED (`t.blocked`) in a black socket. The playhead outlines its key in cream and lights its number.
+- **START/STOP:** a cream key, 72px wide whatever it says, with a round red LED lit while playing. Until the sound engine is ready it reads LOADING, dimmed, does nothing, and its tooltip says "The sound engine is starting".
+- **Tempo:** a 68px box reading "112 BPM".
+- **The print** reads "Rhythm Composer HR-808" while pattern mode is open, with the tooltip "Back to tabs" ("Rhythm composer" on the tabs). The + key, the orange rule and the Files/Changes switches are hidden to give the steps room.
+- **Hover:** each instrument key names its instrument ("Bass drum" … "Cow bell"), and the tempo box says "Scroll to change the tempo".
+
 **Status LEDs** (tab keys, pane labels, space and agent rows, the status strip) are the same everywhere:
 - **Lit:** a 12px black socket holding an 8px mark. Working is an orange dot, blocked a red square, done a yellow ring (1.5px).
 - **Off:** a 6px dark-red glass dot (`#3a1611`) in the same 12px space.
@@ -88,6 +96,14 @@ UI font Helvetica Neue; the print is Futura. Lettering on colored keys and the g
 - **Status strip:** the COMMANDS label opens the palette.
 - **Footer:** SETTINGS opens settings and ADD MACHINE opens the machine dialog.
 - **Brand row:** search opens the space picker. The brand row and tab bar drag the window.
+- **Pattern mode:**
+  - **Opening it** saves the six drum sounds the first time (about a second), then starts the sound engine (about 0.2 s). START reads LOADING until the engine answers.
+  - **Instrument keys** pick the instrument; **step keys** turn its hits on and off; **START/STOP** plays and stops the loop from step 1.
+  - **Edits while playing** land on the first step at least 60 ms ahead (the next step, or the one after at fast tempos), with no restart and no click. **Tempo changes** apply at once.
+  - **Scrolling over the tempo** changes it 60–200 BPM, one BPM per 6 px of scroll. Scrolling the bar no longer steps through tabs.
+  - **The pattern and tempo are saved** and come back next time.
+  - **Clicking the print again** fades the beat out, stops the engine and returns to the tabs.
+  - **Sound:** 808-style voices synthesized from oscillators and noise, no samples. A sound that rings out fades over the last 5 ms of its file; one that's cut off (a choke, a retrigger, STOP) fades over the sampler's 8 ms release, so nothing clicks. A closed hi-hat chokes a ringing open one.
 
 ## Built from
 
@@ -119,10 +135,14 @@ root row (theme hr808, ui_font Helvetica Neue, padding [0,8], gradient, titlebar
 The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shipped `main` layout, so `cmd-b` and the shipped panel commands still work.
 
 **Mods:**
-- **`hr808`:** one mod drawing five parts.
+- **`hr808`:** one mod drawing five parts, plus the sequencer.
   - **How parts are picked:** a layout block names its part in `props.part`. A pane header is recognized by `props().pane`, which Herdr gives it.
   - **The parts:** `tabs.js` (tab keys, + key, rule, print, switches), `brand.js`, `footer.js`, `status.js` and `pane.js` (the pane header).
   - **Shared helpers:** `panel.js` holds `caps()` (the 808 lettering), `led()`/`mark()` and `INK`.
+  - **The sequencer:**
+    - `seq.js`: the pattern, its tempo, and talking to the engine. Every START, STOP, edit and tempo change writes the whole state, `{rev, bpm, playing, pattern}`, with `writeTextFile` (atomic). A single listener reads the engine's status: `ready`, `ok <epoch ms of beat 0> <bpm>`, `stopped` or `error: …`. The playhead counts steps from the `ok` time.
+    - `synth.js`: the six voices made in code, and `wav()`, which saves one voice as a 16-bit mono WAV with a 5 ms end fade.
+    - `engine.jxa`: the sound engine, a JavaScript for Automation script run with `osascript`. It's an AVAudioEngine with six AVAudioUnitSamplers and an AVAudioSequencer whose tracks it writes 1.5 bars ahead. It follows the state file's changes, checking every 50 ms while playing and 100 ms while stopped.
   - **Art:** `plus.svg`.
   - **Shipped icons it borrows:** `mods/workspace-chrome/*.svg` and `mods/pane/*.svg`.
 - **`hr808-spaces`:** a modified copy of the shipped `spaces` mod (0.1.7) that always draws the 808 look.
@@ -136,8 +156,8 @@ The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shippe
 - **Shipped mods it uses as they are:** `files`, `changes`, `new-menu`, `menu`, `picker`, `machine-add`.
 
 **`herdr` functions and commands:**
-- **Data and overlays:** `spaces()`, `machines()`, `agents()`, `panes()`, `terminals()`, `focused()`, `layout()`, `theme()`, `window()`, `updates()`, `home()`, `props()`, `shared()`/`setShared()`, `setAgentOrder()`, `openOverlay()`/`closeOverlay()`.
-- **Programs and files:** `exec()`, `hc()`, `watchFolder()`.
+- **Data and overlays:** `spaces()`, `machines()`, `agents()`, `panes()`, `terminals()`, `focused()`, `layout()`, `theme()`, `window()`, `updates()`, `home()`, `props()`, `shared()`/`setShared()`, `setAgentOrder()`, `openOverlay()`/`closeOverlay()`, `notify()`.
+- **Programs and files:** `exec()`, `hc()`, `watchFolder()`, `readTextFile()`/`writeTextFile()`, `appHome()`, and `fs/promises` (`mkdir`, `writeFile`, `readdir`, `exists`, `unlink`).
 - **Commands:**
   - `tab.select`, `tab.move`, `tab.rename`, `tab.close`, `tab.next`, `tab.prev`
   - `space.select`, `space.move`, `space.new`
@@ -147,7 +167,7 @@ The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shippe
   - `app.settings`, `app.palette`, `mod.open`
   - `window.minimize`, `window.maximize`, `window.close` (only where the system draws no window buttons)
 
-**Programs it runs and files it reads:** `hr808-spaces` runs `git status`/`git rev-parse` in each space's folder (on that space's machine), `gh pr view` for each branch's pull request (a network call through `gh`, for spaces on this computer only), `hc machine ls`, and `open <url>` when a PR label is clicked. It also watches each local space's repo folder (`watchFolder`) so branch and change counts stay current. The other two mods run no programs and read no files.
+**Programs it runs and files it reads:** `hr808-spaces` runs `git status`/`git rev-parse` in each space's folder (on that space's machine), `gh pr view` for each branch's pull request (a network call through `gh`, for spaces on this computer only), `hc machine ls`, and `open <url>` when a PR label is clicked. It also watches each local space's repo folder (`watchFolder`) so branch and change counts stay current. `hr808` runs the sound engine (`sh -c 'osascript -l JavaScript engine.jxa … &'`, in the background) while pattern mode is open, and `pkill` to stop it. Under `mods/hr808/.beats/` it writes the drum sounds, the state file and a heartbeat file, reads the status file the engine writes, and deletes its `beat-*` files on leaving. The saved pattern and tempo are in the mod's `localStorage`. `hr808-agents` runs no programs and reads no files.
 
 ## Watch out
 
@@ -171,6 +191,17 @@ The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shippe
 - **Each mod draws only its own assets and Herdr's shipped icons** (`mods/workspace-chrome/`, `mods/pane/`). If you rename a mod to avoid a clash, rewrite its own `mods/<name>/` paths, and in `hr808-agents` the `openOverlay({ mod: "hr808-agents" })` that opens its sort menu.
 - **The collapsed footer only fits SETTINGS.** ADD MACHINE is reachable after expanding the sidebar.
 - **Limits:** the step numbers past 9 have no shortcut, and the review marks are only shown on open PRs.
+- **Herdr's script engine is far slower than Node and interrupts long synchronous work.** Building the drum sounds in one go got cut off. Split it at `await` points, and build them once into files rather than on every START.
+- **Herdr's one sound call, `playSound(file)`, plays a single MP3 and can't schedule, and `exec` stops what it runs after 30 s.** Sound comes from a separate process started in the background (`sh -c '… &'`). It must stop itself: the engine quits once a heartbeat file, touched once a second while pattern mode is open, is missing or 3 s stale. It counts from its own last wake, so a Mac waking from sleep isn't mistaken for Herdr going away.
+- **Don't restart audio per edit.** Rendering a bar and swapping players on every edit clicked, doubled hits, and lagged; one long-running engine takes edits as data instead.
+- **`afplay` is slow** (about 730 ms of overhead per play), and AVAudioPlayerNode buffer scheduling crashes or hangs from JXA. AVAudioSequencer with AVAudioUnitSampler works.
+- **AVMusicTrack looping cuts ringing notes at the loop seam,** so the engine writes notes ahead on long, non-looping tracks.
+- **The sampler's default release is 0 s,** a hard cut at every note-off. Set 8 ms (stage 5 of the amplitude envelope in `AUAudioUnit.fullState`) and read it back.
+- **A running audio output keeps the Mac awake** (coreaudiod holds an idle-sleep assertion), which is why the engine pauses after 60 s stopped.
+- **Herdr's timers fire about 40 ms late on average,** with spikes to 250 ms, so the playhead trails the sound a little. Its native animations share one app clock a mod can't line up with the audio. Light step 1 straight away on START rather than waiting for the engine's first answer.
+- **Name each run's files with an id for that mod copy.** A reloaded copy counts from 1 again and would read the old copy's status file.
+- **Mark the drum sounds as complete only after all six are written,** so a crash mid-write rebuilds them.
+- **Assumes macOS for sound.** Elsewhere pattern mode warns that the engine needs `osascript`.
 
 ## Done when
 
@@ -183,4 +214,10 @@ The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shippe
 - **Worktrees** hang off their repo's key on gray bracket lines. The selected space has a cream outline, and hovering any row shows a faint one and a pointer.
 - **Collapsed sidebar:** every space and agent becomes a numbered key, and space key 3 is the space `ctrl-3` selects.
 - **Files and Changes** toggle their panel, and their indicator lights cream only while it's open.
+- **Pattern mode:**
+  - Clicking the print shows the sequencer with START reading LOADING, then START once the engine answers. `.beats/voices-1/` then holds six WAVs and a `complete` marker.
+  - START plays from step 1 (the starter beat on a first open, the saved pattern after), and the playhead begins on step 1.
+  - Adding or removing a hit while playing lands at the next step without a click. A tempo scroll changes the speed without a restart.
+  - `pgrep -f mods/hr808/.beats/beat-` shows exactly one engine while pattern mode is open, and none 2 s after leaving it.
+  - Force-quitting Herdr with pattern mode open: the engine is gone within about 3 s.
 - **The gray strip** runs the full width of the window bottom: SETTINGS and ADD MACHINE on the left, the agent meters and COMMANDS on the right.

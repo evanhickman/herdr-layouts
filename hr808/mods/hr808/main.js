@@ -20,4 +20,9 @@ export default class HR808 extends View {
   render(cx) {
     return this.part ? this.part.render(cx) : div();
   }
+
+  // A part with something to stop (the sequencer's sound engine) gets the final call.
+  async close() {
+    await this.part?.close?.();
+  }
 }

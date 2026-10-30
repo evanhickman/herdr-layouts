@@ -1,0 +1,253 @@
+// The HR-808 sequencer's sound, run by seq.js as
+//   osascript -l JavaScript engine.jxa <voices dir> <state file> <alive file> <status file>
+// One process for the whole time pattern mode is open. AVAudioSequencer is the clock
+// (it plays on the audio thread, sample-accurately); this script only writes notes a
+// bar or so ahead and follows the state file, so edits and tempo changes never restart
+// the audio. Each voice is one AVAudioUnitSampler playing its WAV at key 60.
+//
+// Why the tracks don't loop: an AVMusicTrack loop cuts every ringing note dead at the
+// wrap, a click on each bar end. So notes are written ahead on a plain track instead.
+// Why the release: the sampler's default release is 0 s, so any note-off (a choke, a
+// stop) is a hard cut. An 8 ms release makes those fades. Notes otherwise last as long
+// as their sample at the fastest tempo, so nothing else ends a sound early; a voice
+// that hits again while still ringing fades its last hit out over the release.
+//
+// State file (JSON, written whole by seq.js): {rev, bpm, playing, pattern: {bd: [16 x 0|1], ...}}
+// Status file: "ready", then "ok <epoch ms of beat 0> <bpm>" after each start and tempo
+// change, "stopped" after a stop, or "error: <why>". Exits once the alive file is gone
+// or older than 3 s (counted from when this process last ran, so waking from sleep
+// isn't mistaken for Herdr going away). Stopped for a minute, it pauses the audio
+// output so the Mac can sleep again; START resumes it.
+ObjC.import("AVFoundation");
+ObjC.import("Foundation");
+
+const VOICES = ["bd", "sd", "cp", "ch", "oh", "cb"];
+const BAR = 4; // beats; a step is a sixteenth, 0.25 beat
+const MAX_BPM = 200;
+const RELEASE = 0.008; // s, the sampler's note-off fade
+const TICK = 0.05; // s between looks at the state file while playing
+const IDLE = 0.1; // ... and while stopped, to use less CPU (START waits up to this long)
+const REST = 60; // s stopped before the audio output pauses (a running output keeps the Mac awake)
+const AHEAD = 1.5; // bars of notes kept written ahead of the playhead
+const MARGIN = 0.06; // s: an edit only rewrites steps at least this far ahead (the sequencer reads notes slightly early)
+
+const fm = $.NSFileManager.defaultManager;
+const uptime = () => $.NSProcessInfo.processInfo.systemUptime; // the host clock, in s
+const mtime = (path) => {
+  const a = fm.attributesOfItemAtPathError(path, null);
+  return !a || a.isNil() ? null : a.fileModificationDate.timeIntervalSince1970;
+};
+const readText = (path) => {
+  const s = $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null);
+  return !s || s.isNil() ? null : s.js;
+};
+
+// The sampler's amplitude release (envelope stage 5) set through its full state,
+// the same dictionary an .aupreset holds. Returns the value read back.
+function setRelease(sampler, seconds) {
+  const au = sampler.AUAudioUnit;
+  const data = $.NSPropertyListSerialization.dataWithPropertyListFormatOptionsError(au.fullState, 200, 0, null);
+  const state = $.NSPropertyListSerialization.propertyListWithDataOptionsFormatError(data, 2, null, null);
+  const stagesOf = (s) => s.objectForKey("Instrument").objectForKey("Layers").objectAtIndex(0)
+    .objectForKey("Envelopes").objectAtIndex(0).objectForKey("Stages");
+  const stages = stagesOf(state);
+  for (let i = 0; i < stages.count; i++) {
+    const d = stages.objectAtIndex(i);
+    if (d.objectForKey("stage").intValue === 5) d.setObjectForKey($.NSNumber.numberWithDouble(seconds), "time");
+  }
+  au.fullState = state;
+  const back = stagesOf(au.fullState);
+  for (let i = 0; i < back.count; i++) {
+    const d = back.objectAtIndex(i);
+    if (d.objectForKey("stage").intValue === 5) return d.objectForKey("time").doubleValue;
+  }
+  return null;
+}
+
+// The engine, its six samplers and tracks.
+function build(dir) {
+  const eng = $.AVAudioEngine.alloc.init;
+  const seq0 = {};
+  for (const v of VOICES) {
+    const url = $.NSURL.fileURLWithPath(`${dir}/${v}.wav`);
+    const file = $.AVAudioFile.alloc.initForReadingError(url, null);
+    if (!file || file.isNil()) throw new Error(`can't open ${dir}/${v}.wav`);
+    const seconds = file.length / file.processingFormat.sampleRate;
+    const sampler = $.AVAudioUnitSampler.alloc.init;
+    eng.attachNode(sampler);
+    eng.connectToFormat(sampler, eng.mainMixerNode, sampler.outputFormatForBus(0));
+    if (!sampler.loadAudioFilesAtURLsError($([url]), null)) throw new Error(`can't load ${v}.wav`);
+    const release = setRelease(sampler, RELEASE);
+    if (release == null || Math.abs(release - RELEASE) > 0.001) throw new Error("can't set the sampler's release");
+    seq0[v] = { sampler, seconds };
+  }
+  const seq = $.AVAudioSequencer.alloc.initWithAudioEngine(eng);
+  for (const v of VOICES) {
+    const tr = seq.createAndAppendTrack;
+    tr.destinationAudioUnit = seq0[v].sampler;
+    tr.lengthInBeats = 1e6; // never reached: notes are written ahead as it plays
+    seq0[v].track = tr;
+  }
+  return { eng, seq, voices: seq0, pattern: null, bpm: 120, playing: false, until: 0, events: {} };
+}
+
+function clear(ctx, v, from, to) {
+  if (!ctx.events[v] || to <= from) return; // an empty track rejects clearing (error -50)
+  try { ctx.voices[v].track.clearEventsInRange({ start: from, length: to - from }); } catch (e) {}
+}
+
+// How long a note lasts, in beats: its sample's length at the fastest tempo, so it ends
+// by itself, except an open hat, which a closed hat on a later step chokes.
+function length(ctx, v, step) {
+  const natural = ctx.voices[v].seconds * MAX_BPM / 60 + 0.05;
+  if (v !== "oh") return natural;
+  for (let j = 1; j <= 16 && j * 0.25 < natural; j++) if (ctx.pattern.ch[(step + j) % 16]) return j * 0.25;
+  return natural;
+}
+
+// Writes voice v's notes for the steps whose beat is in [from, to).
+function write(ctx, v, from, to) {
+  const tr = ctx.voices[v].track, row = ctx.pattern[v];
+  for (let b = Math.ceil(from * 4 - 1e-9) / 4; b < to - 1e-9; b += 0.25) {
+    const step = Math.round(b * 4) % 16;
+    if (!row[step]) continue;
+    tr.addEventAtBeat($.AVMIDINoteEvent.alloc.initWithChannelKeyVelocityDuration(0, 60, 127, length(ctx, v, step)), b);
+    ctx.events[v] = true;
+  }
+}
+
+// Keeps notes written AHEAD bars past the playhead (from the top while stopped), and
+// drops ones well behind it.
+function schedule(ctx) {
+  const pos = ctx.playing ? ctx.seq.currentPositionInBeats : 0;
+  while (ctx.until < pos + AHEAD * BAR) {
+    for (const v of VOICES) write(ctx, v, ctx.until, ctx.until + BAR);
+    ctx.until += BAR;
+  }
+  if (ctx.playing && pos > 3 * BAR && Math.floor(pos / BAR) !== ctx.trimmed) {
+    ctx.trimmed = Math.floor(pos / BAR);
+    for (const v of VOICES) clear(ctx, v, 0, (ctx.trimmed - 1) * BAR);
+  }
+}
+
+// Rewrites voice v from the first step the sequencer hasn't read yet.
+function rewrite(ctx, v) {
+  const from = ctx.playing ? Math.ceil((ctx.seq.currentPositionInBeats + MARGIN * ctx.bpm / 60) * 4) / 4 : 0;
+  clear(ctx, v, from, ctx.until);
+  write(ctx, v, from, ctx.until);
+}
+
+// The wall-clock time (epoch ms) of beat 0 at the current tempo: what seq.js's
+// playhead counts steps from.
+function anchor(ctx) {
+  const pos = ctx.seq.currentPositionInBeats;
+  let when = null;
+  try {
+    const host = ctx.seq.hostTimeForBeatsError(pos, null);
+    if (host) when = $.AVAudioTime.secondsForHostTime(host) - uptime(); // s from now that `pos` sounds
+  } catch (e) {}
+  if (when == null || !Number.isFinite(when) || Math.abs(when) > 1) when = 0;
+  when += ctx.eng.outputNode.presentationLatency || 0; // the device's own delay: ~1 ms built in, far more over Bluetooth
+  return Math.round(Date.now() + when * 1000 - pos * 60000 / ctx.bpm);
+}
+
+function start(ctx, say) {
+  if (ctx.paused) {
+    if (!ctx.eng.startAndReturnError(null)) throw new Error("the audio engine didn't restart");
+    ctx.paused = false;
+  }
+  ctx.seq.currentPositionInBeats = 0;
+  ctx.seq.prepareToPlay;
+  if (!ctx.seq.startAndReturnError(null)) throw new Error("the sequencer didn't start");
+  ctx.playing = true;
+  ctx.trimmed = null;
+  say(`ok ${anchor(ctx)} ${ctx.bpm}`);
+}
+
+// Stopping sends every sounding note its note-off, so the release fades them out; the
+// samplers are then reset so nothing rings on, and the top of the bar is written again
+// for the next start.
+function stop(ctx, sleep) {
+  ctx.seq.stop;
+  ctx.playing = false;
+  ctx.stoppedAt = Date.now();
+  sleep(RELEASE * 2);
+  for (const v of VOICES) { ctx.voices[v].sampler.reset; clear(ctx, v, 0, ctx.until); ctx.events[v] = false; }
+  ctx.until = 0;
+  schedule(ctx);
+  ctx.seq.currentPositionInBeats = 0;
+  ctx.seq.prepareToPlay;
+}
+
+// Applies a parsed state.
+function apply(ctx, state, say, sleep) {
+  const bpm = Math.min(MAX_BPM, Math.max(60, Number(state.bpm) || 120));
+  const pattern = {};
+  for (const v of VOICES) {
+    const row = state.pattern?.[v];
+    pattern[v] = Array.from({ length: 16 }, (_, i) => (Array.isArray(row) && row[i] ? 1 : 0));
+  }
+  const first = ctx.pattern == null;
+  const old = ctx.pattern;
+  ctx.pattern = pattern;
+  if (bpm !== ctx.bpm || first) {
+    ctx.bpm = bpm;
+    ctx.seq.rate = bpm / 120;
+    if (ctx.playing) say(`ok ${anchor(ctx)} ${bpm}`);
+  }
+  if (first) schedule(ctx);
+  else {
+    const changed = VOICES.filter((v) => old[v].join() !== pattern[v].join());
+    if (changed.includes("ch") && !changed.includes("oh")) changed.push("oh"); // its chokes moved
+    for (const v of changed) rewrite(ctx, v);
+  }
+  const playing = Boolean(state.playing);
+  if (playing && !ctx.playing) start(ctx, say);
+  else if (!playing && ctx.playing) { stop(ctx, sleep); say("stopped"); }
+}
+
+function run(argv) {
+  const [dir, statePath, alive, status] = argv;
+  const say = (text) => $(text).writeToFileAtomicallyEncodingError(status, true, $.NSUTF8StringEncoding, null);
+  const sleep = (s) => $.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(s));
+  // Gone, or not touched for 3 s of this process being awake: after a sleep the
+  // clock jumps, so the count restarts from the wake.
+  let awake = Date.now(), last = Date.now();
+  const stale = () => {
+    const now = Date.now();
+    if (now - last > 2000) awake = now;
+    last = now;
+    const m = mtime(alive);
+    return m == null || (now - Math.max(m * 1000, awake) > 3000);
+  };
+  let ctx = null;
+  try {
+    ctx = build(dir);
+    ctx.eng.prepare;
+    if (!ctx.eng.startAndReturnError(null)) throw new Error("the audio engine didn't start");
+    let seen = null, rev, ticks = 0;
+    for (;;) {
+      const m = mtime(statePath);
+      if (m !== seen) {
+        seen = m;
+        let state = null;
+        try { state = JSON.parse(readText(statePath) ?? "null"); } catch (e) {} // seq.js writes it atomically; this only guards a stray file
+        if (state && state.rev !== rev) {
+          rev = state.rev;
+          const wasReady = ctx.pattern != null;
+          apply(ctx, state, say, sleep);
+          if (!wasReady && !ctx.playing) { ctx.stoppedAt = Date.now(); say("ready"); }
+        }
+      }
+      if (ctx.pattern) schedule(ctx);
+      if (!ctx.playing && !ctx.paused && ctx.stoppedAt && Date.now() - ctx.stoppedAt > REST * 1000) { ctx.eng.pause; ctx.paused = true; }
+      if (++ticks % 4 === 0 && stale()) break;
+      sleep(ctx.playing ? TICK : IDLE);
+    }
+    if (ctx.playing) stop(ctx, sleep);
+    ctx.eng.stop;
+  } catch (e) {
+    say(`error: ${e?.message ?? e}`);
+    try { ctx?.seq.stop; ctx?.eng.stop; } catch (_) {}
+  }
+}

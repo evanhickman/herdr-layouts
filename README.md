@@ -6,6 +6,8 @@ Layouts for [Herdr](https://herdr.dev), the desktop app for terminals and coding
 
 Herdr dressed as a Roland TR-808 drum machine, on the gruvbox palette. Tabs become colored step keys, agent status lights up on LEDs, and a gray strip runs along the bottom like the 808's step panel. Underneath, it's Herdr's own layout, so your workflow stays the same.
 
+Click the "Agent Composer" print for the easter egg: the tab bar turns into a 16-step drum machine with six 808-style sounds, START/STOP and a tempo you scroll to change. Click it again to get your tabs back.
+
 ![HR-808](hr808/preview.png)
 
 ### Install
@@ -27,15 +29,17 @@ cp -Rn mods/hr808 mods/hr808-spaces mods/hr808-agents ~/.config/herdr-app/mods/
 herdr-app do layout.switch '{"name":"hr808"}'
 ```
 
+To update an earlier install, copy the `mods/hr808` folder again without `-n`, so its newer files replace the old ones.
+
 `cmd-shift-l` (`ctrl-shift-l` on Linux and Windows) steps through your layouts, or pick one by name with `herdr-app do layout.switch`. To uninstall, delete the files you copied.
 
 ### What the mods run
 
-`hr808-spaces` runs `git` in each space's folder, `gh pr view` to fetch each branch's pull request (for spaces on this computer), and `hc machine ls`. It also watches each local space's repo folder so branches and change counts stay current. Clicking a PR label runs `open` on the PR's URL. `hr808` and `hr808-agents` run no programs and read no files.
+`hr808-spaces` runs `git` in each space's folder, `gh pr view` to fetch each branch's pull request (for spaces on this computer), and `hc machine ls`. It also watches each local space's repo folder so branches and change counts stay current. Clicking a PR label runs `open` on the PR's URL. While the drum machine is open, `hr808` runs a sound engine in the background (`sh` starting `osascript -l JavaScript engine.jxa`, Apple's AVAudioEngine), which quits by itself within a few seconds if Herdr goes away. While it plays, and for a minute after STOP, the Mac's audio output stays on, which keeps the Mac from idle-sleeping; closing the drum machine stops it, with `pkill` as a backup. The drum sounds and the running engine's files live in `mods/hr808/.beats/`; the saved pattern stays in Herdr's storage for the mod. `hr808-agents` runs no programs and reads no files.
 
 ### Requirements
 
-- macOS. The layout uses Futura and Helvetica Neue, and places the macOS window buttons. On other systems the fonts fall back.
+- macOS. The layout uses Futura and Helvetica Neue, and places the macOS window buttons. On other systems the fonts fall back, and the drum machine can't play sound.
 - `gh`, signed in, for the PR labels. Without it, the labels don't appear and everything else works. PR labels only appear for spaces on this computer.
 
 ### Build it yourself
