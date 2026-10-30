@@ -37,7 +37,7 @@
               "id": "sidebar-lists",
               "type": "column",
               "children": [
-                { "id": "spaces", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "tr808-spaces", "props": { "look": "808" } } },
+                { "id": "spaces", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "tr808-spaces" } },
                 { "id": "agents", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "tr808-agents" } }
               ]
             },

@@ -1,3 +1,4 @@
+// Modified from Herdr's shipped `agents` mod (herdrdev/herdr-app, Apache-2.0).
 // Agents in grouped or priority views; parents take their most urgent sub-agent's place.
 // TR-808 clone of the shipped agents mod: boxed heading, LEDs at the row's start,
 // cream outline on the focused agent.
@@ -52,10 +53,10 @@ function icon(p, size, color) {
 // The space's key, as tr808-spaces draws it in the 808 look: the space's color at
 // gruvbox's bright step, its initial in ink. Keep in step with tr808-spaces.
 const KEY = { ansi6: "ansi14", ansi3: "ansi11", ansi4: "ansi12", ansi5: "ansi13", ansi2: "ansi10", ansi1: "ansi9" };
-function spaceKey(t, a, label) {
+function spaceKey(t, a, label, size = 18) {
   const color = (shared("space.colors") ?? {})[a.space] ?? "ansi6";
   const name = spaces().find((s) => s.id === a.space)?.name ?? a.space_name ?? "?";
-  return h_flex().size(18).flex_none().rounded(2).bg(color.startsWith("#") ? color : t[KEY[color] ?? color]).border(1).border_color("#00000080")
+  return h_flex().size(size).flex_none().rounded(2).bg(color.startsWith("#") ? color : t[KEY[color] ?? color]).border(1).border_color("#00000080")
     .items_center().justify_center().text_size(10.5).font_bold().text_color("#111111").child(label ?? name[0]?.toUpperCase() ?? "?");
 }
 
@@ -301,7 +302,7 @@ export default class Agents extends View {
           .on_click(() => run("pane.focus", { pane: a.pane }))
           .tooltip(a.space_name || a.title || a.program?.name || a.address)
           // Numbered by position, as the shipped collapsed list numbers its agents.
-          .child(div().relative().child(spaceKey(t, a, String(i + 1)))
+          .child(div().relative().child(spaceKey(t, a, String(i + 1), 20))
             .when(lit, (el) => el.child(div().absolute().top(-4).right(-4).child(led(t, a.status)))));
       }
       const when = this.since(a);
@@ -456,7 +457,7 @@ export default class Agents extends View {
               .on_click(() => {
                 const next = !collapsed;
                 setShared("sidebar.collapsed", next);
-                run("layout.resize", { id: "sidebar", px: next ? 44 : (shared("sidebar.width") ?? 240) });
+                run("layout.resize", { id: "sidebar", px: next ? 44 : (shared("sidebar.width") ?? 268) });
               })
               .child(collapsed ? "»" : ""),
           ),

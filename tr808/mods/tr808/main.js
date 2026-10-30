@@ -12,9 +12,9 @@ import { Pane } from "./pane.js";
 const PARTS = { tabs: Tabs, brand: Brand, status: Status, footer: Footer };
 
 export default class TR808 extends View {
-  init(_props, cx) {
+  init() {
     const Part = props()?.pane ? Pane : PARTS[props()?.part];
-    this.part = Part ? new Part(cx) : null;
+    this.part = Part ? new Part() : null;
   }
 
   render(cx) {

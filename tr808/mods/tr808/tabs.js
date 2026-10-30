@@ -55,11 +55,11 @@ export class Tabs {
     localStorage.setItem("panels", JSON.stringify(this.panels));
   }
 
-  key(t, c, i, shown, space) {
+  key(t, c, i, shown, space, step) {
     const color = [t.ansi9, t.accent, t.ansi11, t.foreground][Math.floor(i / 4) % 4];
     const name = tabName(c);
     // The step number under the key, as printed on the 808: it's also the
-    // cmd-<n> shortcut. Under the shown tab it sits on a cream bar.
+    // cmd-<n> shortcut; settled tabs have none. Under the shown tab it sits on a cream bar.
     const bar = () => div().flex_1().h(2).rounded(1).bg(c.active ? t.foreground : "#00000000");
     return v_flex().flex_none().gap(2)
       .child(h_flex().id(`tab-${c.id}`).h(26).px(9).gap(7).min_w(60).max_w(220).items_center().rounded(3)
@@ -81,7 +81,7 @@ export class Tabs {
           .child(svg("mods/pane/close.svg").size(12)))))
       .child(h_flex().h(12).mx(3).gap(5).items_center()
         .child(bar())
-        .child(div().flex_none().text_size(10).font_semibold().text_color(c.active ? t.foreground : t.muted).child(String(c.index)))
+        .child(div().flex_none().text_size(10).font_semibold().text_color(c.active ? t.foreground : t.muted).child(step ? String(step) : ""))
         .child(bar()));
   }
 
@@ -99,6 +99,8 @@ export class Tabs {
     const t = theme();
     const space = spaces().find((s) => s.active);
     const shown = space?.tabs ?? [];
+    // Step numbers count only tabs that aren't settled, as tab.select (cmd-<n>) does.
+    const steps = new Map(shown.filter((c) => !c.settled).map((c, n) => [c.id, n + 1]));
     const panel = find(layout(), "panel");
     const body = find(layout(), "panel-body");
     const enabled = shared("workspace.panels") ?? ["files", "changes"];
@@ -116,7 +118,7 @@ export class Tabs {
       .on_scroll_wheel((e) => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       // The + and the rule ride inside the scroll: the rule fills what the keys leave.
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_start().gap(5).overflow_x_scrollbar()
-        .children(shown.map((c, i) => this.key(t, c, i, shown, space)))
+        .children(shown.map((c, i) => this.key(t, c, i, shown, space, steps.get(c.id))))
         .child(div().id("tab-new").h(26).w(30).flex_none().flex().items_center().justify_center().rounded(3)
           .bg(t.foreground).border(1).border_color(t.muted).text_color(INK)
           .hover((s) => s.border_color(t.accent)).on_mouse_down("left", stop)
