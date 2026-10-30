@@ -2,11 +2,11 @@
 
 Layouts for [Herdr](https://herdr.dev), the desktop app for terminals and coding agents.
 
-## TR-808
+## HR-808
 
 Herdr dressed as a Roland TR-808 drum machine, on the gruvbox palette. Tabs become colored step keys, agent status lights up on LEDs, and a gray strip runs along the bottom like the 808's step panel. Underneath, it's Herdr's own layout, so your workflow stays the same.
 
-![TR-808](tr808/preview.png)
+![HR-808](tr808/preview.png)
 
 ### Install
 
@@ -42,4 +42,4 @@ herdr-app do layout.switch '{"name":"tr808"}'
 
 [tr808/RECIPE.md](tr808/RECIPE.md) describes the layout in enough detail for an agent to rebuild it from an empty folder.
 
-TR-808 is a fan homage and isn't affiliated with Roland.
+HR-808 is a fan homage to the Roland TR-808 and isn't affiliated with Roland.
