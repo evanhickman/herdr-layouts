@@ -124,7 +124,7 @@ export class Tabs {
           .hover((s) => s.border_color(t.accent)).on_mouse_down("left", stop)
           .on_click(() => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 }))
           // A drawn plus: the font's "+" sits below the middle of the key.
-          .child(svg("mods/tr808/plus.svg").size(12)))
+          .child(svg("mods/hr808/plus.svg").size(12)))
         .child(h_flex().flex_1().min_w(16).ml(5).h(26).items_center().child(div().w_full().h(1).bg(t.accent))))
       .child(h_flex().flex_none().h(26).items_center().child(h_flex().gap(8).items_baseline()
         .child(div().font_family("Futura").italic().font_medium().text_size(17).text_color(t.accent).child("Agent Composer"))

@@ -337,7 +337,7 @@ export default class Spaces extends View {
     const parts = pr.state === "MERGED" ? ["merged"] : pr.state === "CLOSED" ? ["closed"] : pr.isDraft ? ["draft"] : [review, ci && `checks ${ci === "passing" ? "pass" : ci === "failing" ? "fail" : "running"}`].filter(Boolean);
     const open = pr.state === "OPEN" && !pr.isDraft;
     const checksLed = { failing: t.ansi1, pending: t.ansi3, passing: t.ansi2 }[ci] ?? null;
-    const reviewMark = { APPROVED: "mods/workspace-chrome/check.svg", CHANGES_REQUESTED: "mods/workspace-chrome/x.svg", REVIEW_REQUIRED: "mods/tr808-spaces/circle.svg" }[pr.reviewDecision];
+    const reviewMark = { APPROVED: "mods/workspace-chrome/check.svg", CHANGES_REQUESTED: "mods/workspace-chrome/x.svg", REVIEW_REQUIRED: "mods/hr808-spaces/circle.svg" }[pr.reviewDecision];
     // Stopped so the row under it neither selects nor starts a drag.
     return this.trackLabel(badge, t, open, open ? checksLed : null)
       .cursor_pointer().hover((s) => s.opacity(0.85))
@@ -427,7 +427,7 @@ export default class Spaces extends View {
     if (!label) return socket.child(div().size(6).rounded_full().bg("#3a1611").border(1).border_color(t.border));
     const apps = agents().filter((a) => a.space === w.id && a.status === w.status).map((a) => a.app ?? "agent");
     const text = `${[...new Set(apps)].join(", ")} · ${label}`;
-    // Each lit state has its own shape (as in the tr808 mod's LEDs): working a dot, blocked a square, done a ring.
+    // Each lit state has its own shape (as in the hr808 mod's LEDs): working a dot, blocked a square, done a ring.
     const mark = w.status === "blocked" ? div().size(8).bg(t.blocked)
       : w.status === "done" ? div().size(8).rounded_full().border(1.5).border_color(t.done)
       : div().size(8).rounded_full().bg(t.working);
@@ -477,7 +477,7 @@ export default class Spaces extends View {
         .when(!collapsed, el => el
           .child(div().flex_none().h(16).px(5).flex().items_center().border(1).border_color(t.foreground).text_size(9).font_semibold().text_color(t.foreground).child("SPACES"))
           .child(div().flex_1().h(1).bg(t.dim)))
-        .child(div().id("space-new").p(4).rounded(3).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).on_click(() => run("space.new")).child(svg("mods/tr808-spaces/plus.svg").size(11))))
+        .child(div().id("space-new").p(4).rounded(3).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).on_click(() => run("space.new")).child(svg("mods/hr808-spaces/plus.svg").size(11))))
       .child(v_flex().flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
         .on_mouse_up("left", (_e, cx) => { this.cancelDrag(); cx.notify(); })
         // Leaving the list drops the drag: a release outside it never reaches a row.

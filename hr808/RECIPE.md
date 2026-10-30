@@ -8,7 +8,7 @@ Herdr dressed as a Roland TR-808 drum machine, on the gruvbox palette. Tabs are 
 
 The window is a row. Black chassis edges (8px, a `#0a0a0a`→`#202020` gradient at 90°) frame a near-black chassis (`canvas`, 1px `#000000` border). The chassis splits into a sidebar on the left and the work area on the right, divided by a 1px `dim` rule. The system title bar is hidden, and the macOS window buttons sit at `[20, 10]`.
 
-**Theme** (`themes/tr808.json`, installed into the home's `themes/` alongside the layout, which names it): gruvbox dark hard (terminal background `#1d2021`, foreground `#ebdbb2`, gruvbox ANSI), with these overrides:
+**Theme** (`themes/hr808.json`, installed into the home's `themes/` alongside the layout, which names it): gruvbox dark hard (terminal background `#1d2021`, foreground `#ebdbb2`, gruvbox ANSI), with these overrides:
 - canvas and chrome `#161616`, raised `#32302f`, hover `#3c3836`, selected `#504945`, border `#3c3836`, input `#665c54`
 - muted `#bdae93`, dim `#7c6f64`
 - accent `#fe8019` (the 808's orange print)
@@ -92,47 +92,47 @@ UI font Helvetica Neue; the print is Futura. Lettering on colored keys and the g
 ## Built from
 
 **Files**, each copied to the same path under the Herdr home (`~/.config/herdr-app`):
-- `layouts/tr808.json`, the layout, and `layouts/tr808.svg`, its preview picture in Settings
-- `themes/tr808.json`, the theme the layout names
-- `mods/tr808/`, `mods/tr808-spaces/`, `mods/tr808-agents/`
+- `layouts/hr808.json`, the layout, and `layouts/hr808.svg`, its preview picture in Settings
+- `themes/hr808.json`, the theme the layout names
+- `mods/hr808/`, `mods/hr808-spaces/`, `mods/hr808-agents/`
 
-**Node tree** (`layouts/tr808.json`):
+**Node tree** (`layouts/hr808.json`):
 
 ```
-root row (theme tr808, ui_font Helvetica Neue, padding [0,8], gradient, titlebar none, traffic_lights [20,10], terminal_padding [14,12])
+root row (theme hr808, ui_font Helvetica Neue, padding [0,8], gradient, titlebar none, traffic_lights [20,10], terminal_padding [14,12])
 └ chassis row (canvas, border 1 #000000, divider 1 dim)
   ├ sidebar column 268px (min 44, max 480, chrome, resizable false)
-  │ ├ brand block 46px, window_drag    { mod: tr808, props: { part: "brand" } }
+  │ ├ brand block 46px, window_drag    { mod: hr808, props: { part: "brand" } }
   │ ├ sidebar-lists column
-  │ │ ├ spaces block weight 1, min 90  { mod: tr808-spaces }
-  │ │ └ agents block weight 1, min 90  { mod: tr808-agents }
-  │ └ sidebar-footer block 28px        { mod: tr808, props: { part: "footer" } }
+  │ │ ├ spaces block weight 1, min 90  { mod: hr808-spaces }
+  │ │ └ agents block weight 1, min 90  { mod: hr808-agents }
+  │ └ sidebar-footer block 28px        { mod: hr808, props: { part: "footer" } }
   └ work column (resizable false)
-    ├ tabs block 46px, window_drag     { mod: tr808, props: { part: "tabs" } }
+    ├ tabs block 46px, window_drag     { mod: hr808, props: { part: "tabs" } }
     ├ work-body row (padding 8, gap 8)
-    │ ├ main block { tab: "active", pane: { header: { content: { mod: tr808 }, height 28, top, always },
+    │ ├ main block { tab: "active", pane: { header: { content: { mod: hr808 }, height 28, top, always },
     │ │              background "background", border 1 border, focus 1 accent, radius 3, gap 8, lone true } }
     │ └ panel column 368px (min 280, max 900, hidden) → panel-body stack: files, changes (shipped mods)
-    └ status block 28px                { mod: tr808, props: { part: "status" } }
+    └ status block 28px                { mod: hr808, props: { part: "status" } }
 ```
 
 The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shipped `main` layout, so `cmd-b` and the shipped panel commands still work.
 
 **Mods:**
-- **`tr808`:** one mod drawing five parts.
+- **`hr808`:** one mod drawing five parts.
   - **How parts are picked:** a layout block names its part in `props.part`. A pane header is recognized by `props().pane`, which Herdr gives it.
   - **The parts:** `tabs.js` (tab keys, + key, rule, print, switches), `brand.js`, `footer.js`, `status.js` and `pane.js` (the pane header).
   - **Shared helpers:** `panel.js` holds `caps()` (the 808 lettering), `led()`/`mark()` and `INK`.
   - **Art:** `plus.svg`.
   - **Shipped icons it borrows:** `mods/workspace-chrome/*.svg` and `mods/pane/*.svg`.
-- **`tr808-spaces`:** a modified copy of the shipped `spaces` mod (0.1.7) that always draws the 808 look.
+- **`hr808-spaces`:** a modified copy of the shipped `spaces` mod (0.1.7) that always draws the 808 look.
   - **Added to the shipped list:**
     - PR track labels from `gh pr view` (`trackLabel`), with the review marks (`circle.svg`, plus the shipped `check.svg` and `x.svg`)
     - `statusLed`, `stepKey` and `compactKey`
     - the bracket lines (a `parent` flag set in `ordered()`)
     - the boxed heading, with its own `plus.svg`
   - **Space colors:** come from shared `space.colors`, the same names the shipped list stores, mapped to the theme's bright ANSI step.
-- **`tr808-agents`:** a modified copy of the shipped `agents` mod (0.1.7) with `led()`, `spaceKey()`, the boxed heading, the tick rule, the section headings, cream row edges, numbered collapsed keys and one-color sub-agent glyphs.
+- **`hr808-agents`:** a modified copy of the shipped `agents` mod (0.1.7) with `led()`, `spaceKey()`, the boxed heading, the tick rule, the section headings, cream row edges, numbered collapsed keys and one-color sub-agent glyphs.
 - **Shipped mods it uses as they are:** `files`, `changes`, `new-menu`, `menu`, `picker`, `machine-add`.
 
 **`herdr` functions and commands:**
@@ -147,14 +147,14 @@ The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shippe
   - `app.settings`, `app.palette`, `mod.open`
   - `window.minimize`, `window.maximize`, `window.close` (only where the system draws no window buttons)
 
-**Programs it runs and files it reads:** `tr808-spaces` runs `git status`/`git rev-parse` in each space's folder (on that space's machine), `gh pr view` for each branch's pull request (a network call through `gh`, for spaces on this computer only), `hc machine ls`, and `open <url>` when a PR label is clicked. It also watches each local space's repo folder (`watchFolder`) so branch and change counts stay current. The other two mods run no programs and read no files.
+**Programs it runs and files it reads:** `hr808-spaces` runs `git status`/`git rev-parse` in each space's folder (on that space's machine), `gh pr view` for each branch's pull request (a network call through `gh`, for spaces on this computer only), `hc machine ls`, and `open <url>` when a PR label is clicked. It also watches each local space's repo folder (`watchFolder`) so branch and change counts stay current. The other two mods run no programs and read no files.
 
 ## Watch out
 
-- **Install the theme too.** The layout names `tr808`, which lives in `themes/tr808.json`; copying only the layout file and mod folders loses the palette and the ink contrast.
+- **Install the theme too.** The layout names `hr808`, which lives in `themes/hr808.json`; copying only the layout file and mod folders loses the palette and the ink contrast.
 - **`herdr-app check` writes `gpui-kit.d.ts` and `jsconfig.json` into every mod folder it checks.** Don't commit them; the repo's `.gitignore` covers both.
-- **Mods can't import from another mod's folder.** That's why `tr808` is one mod picking its part by props rather than five mods. The LED is written three times (`tr808/panel.js`, `tr808-spaces` `statusLed`, `tr808-agents` `led`), and the space key twice; change them together.
-- **`herdr-app check` doesn't render the parts.** With no props, `tr808` draws an empty `div`, so the check only proves the modules load. Verify each part in the live window (`herdr-app status` for errors, `herdr-app shot` to look).
+- **Mods can't import from another mod's folder.** That's why `hr808` is one mod picking its part by props rather than five mods. The LED is written three times (`hr808/panel.js`, `hr808-spaces` `statusLed`, `hr808-agents` `led`), and the space key twice; change them together.
+- **`herdr-app check` doesn't render the parts.** With no props, `hr808` draws an empty `div`, so the check only proves the modules load. Verify each part in the live window (`herdr-app status` for errors, `herdr-app shot` to look).
 - **The tab keys sit in a horizontal scroll container, and that container takes all the width it's given.** Capping it doesn't help. Put the + key and the orange rule inside the scrolling row, with the rule `flex_1`, so the rule fills whatever the keys leave.
 - **Line everything up to the keys, not the bar.** The step numbers hang under the keys, so the keys aren't centered in the 46px bar. Top-align the bar (`pt(4)`, `items_start`) and give the +, rule, print and switches 26px boxes. Do the same in the brand row so its rule meets the tab bar's.
 - **The font draws "+" about 2.5px below center.** Draw it (`plus.svg`) rather than typing it.
@@ -168,13 +168,13 @@ The ids `sidebar`, `panel`, `panel-body`, `files` and `changes` match the shippe
 - **Both list mods are clones.** They won't get Herdr's later fixes to the shipped `spaces` and `agents` mods. A clone also starts with fresh local state: agent pins and "time since changed" don't carry over from the shipped `agents` mod.
 - **Assumes macOS:** the window-button spot and the Futura and Helvetica Neue fonts. Elsewhere the fonts fall back, and the tab bar draws its own window buttons.
 - **PR labels need `gh` installed and signed in** for each repo's host, and only appear for spaces on this computer. Without `gh` the labels don't appear and nothing else changes.
-- **Each mod draws only its own assets and Herdr's shipped icons** (`mods/workspace-chrome/`, `mods/pane/`). If you rename a mod to avoid a clash, rewrite its own `mods/<name>/` paths.
+- **Each mod draws only its own assets and Herdr's shipped icons** (`mods/workspace-chrome/`, `mods/pane/`). If you rename a mod to avoid a clash, rewrite its own `mods/<name>/` paths, and in `hr808-agents` the `openOverlay({ mod: "hr808-agents" })` that opens its sort menu.
 - **The collapsed footer only fits SETTINGS.** ADD MACHINE is reachable after expanding the sidebar.
 - **Limits:** the step numbers past 9 have no shortcut, and the review marks are only shown on open PRs.
 
 ## Done when
 
-- `herdr-app check` passes for `mods/tr808`, `mods/tr808-spaces` and `mods/tr808-agents`, and `herdr-app status` shows `errors: []` with the layout shown.
+- `herdr-app check` passes for `mods/hr808`, `mods/hr808-spaces` and `mods/hr808-agents`, and `herdr-app status` shows `errors: []` with the layout shown.
 - **Tab bar:**
   - Each tab is a colored key in fours (red, orange, yellow, cream) with its number underneath, and the shown tab's number is on a cream bar.
   - The + key's plus and the keys share one centerline. The orange rule runs from the + to "Agent Composer", level with the rule after "Herdr".

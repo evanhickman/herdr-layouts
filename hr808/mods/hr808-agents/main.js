@@ -1,6 +1,6 @@
 // Modified from Herdr's shipped `agents` mod (herdrdev/herdr-app, Apache-2.0).
 // Agents in grouped or priority views; parents take their most urgent sub-agent's place.
-// TR-808 clone of the shipped agents mod: boxed heading, LEDs at the row's start,
+// HR-808 clone of the shipped agents mod: boxed heading, LEDs at the row's start,
 // cream outline on the focused agent.
 // A viewed done agent stays in Done until left.
 
@@ -50,8 +50,8 @@ function icon(p, size, color) {
   return p.tint ? svg(p.icon).size(size).flex_none().text_color(color) : image(p.icon).w(size).h(size).flex_none();
 }
 
-// The space's key, as tr808-spaces draws it in the 808 look: the space's color at
-// gruvbox's bright step, its initial in ink. Keep in step with tr808-spaces.
+// The space's key, as hr808-spaces draws it in the 808 look: the space's color at
+// gruvbox's bright step, its initial in ink. Keep in step with hr808-spaces.
 const KEY = { ansi6: "ansi14", ansi3: "ansi11", ansi4: "ansi12", ansi5: "ansi13", ansi2: "ansi10", ansi1: "ansi9" };
 function spaceKey(t, a, label, size = 18) {
   const color = (shared("space.colors") ?? {})[a.space] ?? "ansi6";
@@ -65,7 +65,7 @@ function led(t, status) {
   const socket = div().size(12).flex_none().flex().items_center().justify_center().rounded_full();
   if (status !== "working" && status !== "blocked" && status !== "done") return socket.child(div().size(6).rounded_full().bg("#3a1611").border(1).border_color(t.border));
   // Red and orange are too close to tell apart at this size: working a dot, blocked a square, done a ring.
-  // Same LED as the tr808 mod's panel.js and tr808-spaces' statusLed: change all three.
+  // Same LED as the hr808 mod's panel.js and hr808-spaces' statusLed: change all three.
   const mark = status === "blocked" ? div().size(8).bg(t.blocked)
     : status === "done" ? div().size(8).rounded_full().border(1.5).border_color(t.done)
     : div().size(8).rounded_full().bg(t.working);
@@ -431,7 +431,7 @@ export default class Agents extends View {
                 .text_size(11)
                 .text_color(t.dim)
                 .hover((s) => s.text_color(t.foreground))
-                .on_click(() => openOverlay({ mod: "tr808-agents", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
+                .on_click(() => openOverlay({ mod: "hr808-agents", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
                 .tooltip(`Sort agents: ${sort.label}`)
                 .child(svg(`mods/workspace-chrome/${sort.icon}.svg`).size(14)),
             ),

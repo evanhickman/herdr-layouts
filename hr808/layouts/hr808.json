@@ -1,9 +1,9 @@
 {
   "id": "root",
   "type": "row",
-  "theme": "tr808",
+  "theme": "hr808",
   "ui_font": "Helvetica Neue",
-  "preview": "layouts/tr808.svg",
+  "preview": "layouts/hr808.svg",
   "titlebar": "none",
   "traffic_lights": [20, 10],
   "background": { "gradient": ["#0a0a0a", "#202020"], "angle": 90 },
@@ -31,21 +31,21 @@
               "type": "block",
               "size": { "px": 46 },
               "window_drag": true,
-              "content": { "mod": "tr808", "props": { "part": "brand" } }
+              "content": { "mod": "hr808", "props": { "part": "brand" } }
             },
             {
               "id": "sidebar-lists",
               "type": "column",
               "children": [
-                { "id": "spaces", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "tr808-spaces" } },
-                { "id": "agents", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "tr808-agents" } }
+                { "id": "spaces", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "hr808-spaces" } },
+                { "id": "agents", "type": "block", "size": { "weight": 1 }, "min": 90, "content": { "mod": "hr808-agents" } }
               ]
             },
             {
               "id": "sidebar-footer",
               "type": "block",
               "size": { "px": 28 },
-              "content": { "mod": "tr808", "props": { "part": "footer" } }
+              "content": { "mod": "hr808", "props": { "part": "footer" } }
             }
           ]
         },
@@ -59,7 +59,7 @@
               "type": "block",
               "size": { "px": 46 },
               "window_drag": true,
-              "content": { "mod": "tr808", "props": { "part": "tabs" } }
+              "content": { "mod": "hr808", "props": { "part": "tabs" } }
             },
             {
               "id": "work-body",
@@ -74,7 +74,7 @@
                     "tab": "active",
                     "pane": {
                       "header": {
-                        "content": { "mod": "tr808" },
+                        "content": { "mod": "hr808" },
                         "reveal": "always",
                         "height": 28,
                         "position": "top"
@@ -113,7 +113,7 @@
               "id": "status",
               "type": "block",
               "size": { "px": 28 },
-              "content": { "mod": "tr808", "props": { "part": "status" } }
+              "content": { "mod": "hr808", "props": { "part": "status" } }
             }
           ]
         }

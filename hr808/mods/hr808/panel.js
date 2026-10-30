@@ -36,7 +36,7 @@ export function led(t, state, size = 7) {
 
 // Red and orange are too close to tell apart at this size, so each lit state
 // has its own shape: working a dot, blocked a square, done a ring. The same LED
-// is drawn in tr808-spaces and tr808-agents (mods can't share code): change all three.
+// is drawn in hr808-spaces and hr808-agents (mods can't share code): change all three.
 export function mark(state, color, size) {
   if (state === "blocked") return div().size(size).bg(color);
   if (state === "done") return div().size(size).rounded_full().border(1.5).border_color(color);
